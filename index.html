@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pixel RPG</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #87ceeb;
+      height: 100%;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: linear-gradient(#87ceeb, #6ab04c);
+      border: 2px solid #333;
+    }
+    #ui {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: none;
+      background: #333;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="800" height="400"></canvas>
+
+  <div id="ui">
+    <button id="punchBtn">🥊 Đấm</button>
+    <button id="shootBtn">🔫 Bắn</button>
+    <button id="healBtn">💧 Hồi năng lượng</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    const player = {
+      x: 100, y: 300, size: 30, color: 'red', hp: 100, energy: 100
+    };
+    const monster = {
+      x: 600, y: 300, size: 30, color: 'green', hp: 100
+    };
+    let bullets = [];
+    let keys = {};
+
+    document.addEventListener('keydown', e => keys[e.key] = true);
+    document.addEventListener('keyup', e => keys[e.key] = false);
+
+    function drawRect(x, y, s, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x - s/2, y - s/2, s, s);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // ground
+      ctx.fillStyle = '#654321';
+      ctx.fillRect(0, 330, canvas.width, 70);
+      // player & monster
+      drawRect(player.x, player.y, player.size, player.color);
+      drawRect(monster.x, monster.y, monster.size, monster.color);
+      // bullets
+      bullets.forEach(b => drawRect(b.x, b.y, 8, 'yellow'));
+      // HP bars
+      ctx.fillStyle = 'red';
+      ctx.fillRect(20, 20, player.hp * 2, 10);
+      ctx.fillStyle = 'green';
+      ctx.fillRect(canvas.width - 220, 20, monster.hp * 2, 10);
+    }
+
+    function update() {
+      if (keys['ArrowLeft']) player.x -= 4;
+      if (keys['ArrowRight']) player.x += 4;
+      if (keys['ArrowUp']) player.y -= 4;
+      if (keys['ArrowDown']) player.y += 4;
+      // bullets move
+      bullets.forEach(b => b.x += b.vx);
+      // collision
+      bullets.forEach(b => {
+        if (Math.abs(b.x - monster.x) < 20 && Math.abs(b.y - monster.y) < 20) {
+          monster.hp -= 10;
+          b.dead = true;
+        }
+      });
+      bullets = bullets.filter(b => !b.dead && b.x < canvas.width);
+      if (monster.hp <= 0) monster.hp = 100;
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    document.getElementById('punchBtn').onclick = () => {
+      if (Math.abs(player.x - monster.x) < 40) {
+        monster.hp -= 15;
+      }
+    };
+
+    document.getElementById('shootBtn').onclick = () => {
+      if (player.energy >= 10) {
+        bullets.push({x: player.x, y: player.y, vx: 6});
+        player.energy -= 10;
+      }
+    };
+
+    document.getElementById('healBtn').onclick = () => {
+      if (player.energy >= 20 && player.hp < 100) {
+        player.hp += 20;
+        player.energy -= 20;
+      }
+    };
+
+    loop();
+  </script>
+</body>
+</html>
